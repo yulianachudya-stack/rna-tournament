@@ -63,9 +63,11 @@ try { vkBridge.send('VKWebAppInit'); } catch(e) {}
     display: flex;
     align-items: center;
     justify-content: space-between;
-    position: sticky;
+    position: fixed;
     top: 0;
-    z-index: 100;
+    left: 0;
+    right: 0;
+    z-index: 200;
     box-shadow: 0 2px 20px rgba(192,0,26,.15);
   }
 
@@ -104,6 +106,11 @@ try { vkBridge.send('VKWebAppInit'); } catch(e) {}
     border-bottom: 1px solid var(--border);
     overflow-x: auto;
     scrollbar-width: none;
+    position: fixed;
+    top: 68px;
+    left: 0;
+    right: 0;
+    z-index: 199;
   }
   .tabs::-webkit-scrollbar { display: none; }
 
@@ -123,7 +130,7 @@ try { vkBridge.send('VKWebAppInit'); } catch(e) {}
   .tab:hover:not(.active) { color: var(--light); background: var(--bg3); }
 
   /* ===== MAIN CONTENT ===== */
-  .content { padding: 16px; max-width: 800px; margin: 0 auto; }
+  .content { padding: 16px; max-width: 800px; margin: 0 auto; padding-top: 122px; padding-bottom: 70px; }
 
   .page { display: none; }
   .page.active { display: block; }
@@ -1058,7 +1065,11 @@ try { vkBridge.send('VKWebAppInit'); } catch(e) {}
     border-top: 1px solid rgba(192,0,26,.2);
     padding: 14px 20px;
     text-align: center;
-    margin-top: 32px;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 198;
   }
   .footer-title {
     font-family: 'Bebas Neue', sans-serif;
@@ -1079,6 +1090,109 @@ try { vkBridge.send('VKWebAppInit'); } catch(e) {}
     font-weight: 500;
   }
   .footer-sub a:hover { text-decoration: underline; }
+
+  /* ===== МОБИЛЬНАЯ АДАПТАЦИЯ ===== */
+  @media (max-width: 480px) {
+    /* Матч карточки */
+    .match-card {
+      padding: 8px 10px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .match-num {
+      font-size: 16px;
+      min-width: 22px;
+    }
+    .match-teams {
+      flex: 1;
+      min-width: 0;
+      gap: 4px;
+    }
+    .match-team {
+      font-size: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100px;
+    }
+    .match-group-tag {
+      font-size: 8px;
+      padding: 1px 4px;
+    }
+    .match-score {
+      font-size: 18px;
+      min-width: 45px;
+    }
+
+    /* Ввод счёта */
+    .score-inputs {
+      flex-wrap: nowrap;
+      gap: 3px;
+      width: 100%;
+      justify-content: flex-end;
+    }
+    .score-in {
+      width: 34px;
+      font-size: 16px;
+      padding: 3px 1px;
+    }
+    .save-btn {
+      font-size: 9px;
+      padding: 4px 8px;
+      letter-spacing: 1px;
+    }
+
+    /* Плей-офф ввод */
+    .playoff-score-inputs { gap: 3px; }
+    .playoff-score-in {
+      width: 34px;
+      font-size: 16px;
+    }
+
+    /* Группы */
+    .groups-grid { grid-template-columns: 1fr; }
+
+    /* Таблица результатов */
+    .stand-table { font-size: 11px; }
+    .stand-table th { font-size: 9px; padding: 6px 6px; }
+    .stand-table td { padding: 8px 6px; }
+    .stand-name { font-size: 12px; }
+    .pts-cell { font-size: 16px; }
+
+    /* Плей-офф матчи */
+    .playoff-match-header { padding: 5px 10px 5px 14px; }
+    .playoff-label { font-size: 9px; }
+    .playoff-seed-label { font-size: 8px; }
+    .playoff-team-row { padding: 8px 10px 8px 14px; }
+    .playoff-team-name { font-size: 13px; }
+    .playoff-team-seed { font-size: 8px; min-width: 16px; }
+
+    /* Итог */
+    .fpc-num { font-size: 28px; min-width: 36px; }
+    .fpc-name { font-size: 16px; }
+    .fpc-medal { font-size: 18px; }
+    .champion-name { font-size: 26px; }
+
+    /* Сетка плей-офф на главной */
+    .bracket { min-width: 360px; }
+    .bracket-team { padding: 6px 6px; font-size: 10px; }
+    .bracket-score { font-size: 14px; }
+    .bracket-seed { font-size: 8px; min-width: 14px; }
+
+    /* Мини-таблица */
+    .ms-name { font-size: 11px; }
+    .ms-pts { font-size: 16px; }
+
+    /* Логотип */
+    .logo { font-size: 22px; letter-spacing: 2px; }
+
+    /* Вкладки */
+    .tab { padding: 12px 12px; font-size: 10px; letter-spacing: 1px; }
+
+    /* Раздел сейчас играют */
+    .now-team { font-size: 16px; }
+    .now-vs { font-size: 12px; }
+  }
   /* ===== SCROLL ===== */
   ::-webkit-scrollbar { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track { background: var(--bg); }
@@ -1341,18 +1455,34 @@ function saveState() {
 }
 
 async function loadState() {
+  // Сначала пробуем локальный бэкап — мгновенно
   try {
-    const res = await fetch(API_URL);
+    const raw = localStorage.getItem('rna_backup');
+    if (raw) {
+      const local = JSON.parse(raw);
+      applyState(local);
+    }
+  } catch(e) {}
+
+  // Затем пробуем облако с таймаутом 3 сек
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+    const res = await fetch(API_URL, { signal: controller.signal });
+    clearTimeout(timeout);
     const state = await res.json();
     if (state && state.ts) {
       applyState(state);
       return true;
     }
-  } catch(e) {}
-  // Фоллбэк — локальный бэкап
+  } catch(e) {
+    console.log('Cloud load failed, using local:', e.message);
+  }
+
+  // Проверяем есть ли локальные данные
   try {
     const raw = localStorage.getItem('rna_backup');
-    if (raw) { applyState(JSON.parse(raw)); return true; }
+    return !!raw;
   } catch(e) {}
   return false;
 }
@@ -1408,7 +1538,7 @@ function showSaveBadge(text) {
 // Init on load
 document.addEventListener('DOMContentLoaded', async () => {
   await initVK();
-  const restored = loadState();
+  const restored = await loadState();
   renderTeamList();
   if (restored && (groups.A.length || groups.B.length)) {
     renderAll();
