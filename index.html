@@ -2,25 +2,10 @@
 <html lang="ru">
 <head>
 <script>
-// VK Bridge stub — если ВК сам не инжектировал bridge
-window.vkBridge = window.vkBridge || window.bridge || {
-  send: function(method, params) {
-    return new Promise(function(resolve, reject) {
-      // Попытка через postMessage для мобильного ВК
-      try {
-        if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.vkBridge) {
-          window.webkit.messageHandlers.vkBridge.postMessage({ handler: method, parameters: params || {} });
-        } else if (window.AndroidBridge) {
-          window.AndroidBridge.send(JSON.stringify({ handler: method, parameters: params || {} }));
-        }
-      } catch(e) {}
-      // Для не-ВК окружения — возвращаем заглушку
-      setTimeout(function() { reject(new Error('not in VK')); }, 300);
-    });
-  }
-};
-// Немедленно инициализируем
-try { vkBridge.send('VKWebAppInit'); } catch(e) {}
+// Минимальная инициализация ВК
+if (typeof vkBridge !== 'undefined') {
+  try { vkBridge.send('VKWebAppInit'); } catch(e) {}
+}
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
@@ -1354,12 +1339,13 @@ let vkUserId = null;
 async function initVK() {
   try {
     if (typeof vkBridge === 'undefined') throw new Error('no bridge');
-    await vkBridge.send('VKWebAppInit');
-    const user = await vkBridge.send('VKWebAppGetUserInfo');
+    // Таймаут 2 сек на получение данных пользователя
+    const userPromise = vkBridge.send('VKWebAppGetUserInfo');
+    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2000));
+    const user = await Promise.race([userPromise, timeout]);
     vkUserId = user.id;
     isAdmin = ADMIN_IDS.includes(vkUserId);
   } catch(e) {
-    // Не в ВК — показываем кнопку переключения для теста
     vkUserId = null;
     isAdmin = false;
   }
